@@ -5,6 +5,9 @@ import com.karthic.codearena.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import com.karthic.codearena.dto.UserResponse;
+import com.karthic.codearena.dto.LoginResponse;
+
 
 @RestController
 @RequestMapping("/api/users")
@@ -15,7 +18,7 @@ public class UserController {
 
     // Register API
     @PostMapping("/register")
-    public User registerUser(@RequestBody User user) {
+    public UserResponse registerUser(@RequestBody User user) {
         return userService.registerUser(user);
     }
 
@@ -26,7 +29,7 @@ public class UserController {
 
     // 🔹 LOGIN API
     @PostMapping("/login")
-    public String loginUser(@RequestBody User user) {
+    public LoginResponse loginUser(@RequestBody User user) {
         return userService.loginUser(user);
     }
 }

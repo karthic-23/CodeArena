@@ -1,9 +1,11 @@
 package com.karthic.codearena.service;
 
+import com.karthic.codearena.dto.UserResponse;
 import com.karthic.codearena.model.User;
 import com.karthic.codearena.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.karthic.codearena.dto.LoginResponse;
 
 import java.util.Optional;
 import java.util.List;
@@ -23,21 +25,24 @@ public class UserService {
     // ============================
     // 🔹 REGISTER USER
     // ============================
-    public User registerUser(User user) {
+    public UserResponse registerUser(User user) {
 
-        // 🔍 Check if email already exists
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
 
         if (existingUser.isPresent()) {
             throw new RuntimeException("Email already exists");
         }
 
-        // 🔥 VERY IMPORTANT STEP
-        // Encrypt password before saving
         user.setPassword(encoder.encode(user.getPassword()));
 
-        // 💾 Save user in DB
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // 🔥 Convert User → UserResponse (hide password)
+        return new UserResponse(
+                savedUser.getId(),
+                savedUser.getName(),
+                savedUser.getEmail()
+        );
     }
 
     // ============================
@@ -50,25 +55,27 @@ public class UserService {
     // ============================
     // 🔹 LOGIN USER
     // ============================
-    public String loginUser(User user) {
+    public LoginResponse loginUser(User user) {
 
-        // 🔍 Step 1: Find user by email
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
 
         if (existingUser.isEmpty()) {
-            return "User not found";
+            return new LoginResponse("User not found", null);
         }
 
-        // 🔐 Step 2: Compare passwords (USE SAME encoder)
         boolean isMatch = encoder.matches(
-                user.getPassword(),                  // plain password from request
-                existingUser.get().getPassword()     // encrypted password from DB
+                user.getPassword(),
+                existingUser.get().getPassword()
         );
 
         if (isMatch) {
-            return "Login successful";
+            return new LoginResponse(
+                    "Login successful",
+                    existingUser.get().getEmail()
+            );
         } else {
-            return "Invalid password";
+            return new LoginResponse("Invalid password", null);
         }
     }
+    
 }
