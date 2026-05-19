@@ -4,20 +4,18 @@ package com.karthic.codearena.dto;
 public class LoginResponse {
 
     private String message;
-    private String email;
+    private String token; // 🔥 replace email with token
 
-    // Constructor
-    public LoginResponse(String message, String email) {
+    public LoginResponse(String message, String token) {
         this.message = message;
-        this.email = email;
+        this.token = token;
     }
 
-    // Getters
     public String getMessage() {
         return message;
     }
 
-    public String getEmail() {
-        return email;
+    public String getToken() {
+        return token;
     }
 }

@@ -6,6 +6,7 @@ import com.karthic.codearena.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.karthic.codearena.dto.LoginResponse;
+import com.karthic.codearena.config.JwtUtil;
 
 import java.util.Optional;
 import java.util.List;
@@ -71,7 +72,7 @@ public class UserService {
         if (isMatch) {
             return new LoginResponse(
                     "Login successful",
-                    existingUser.get().getEmail()
+                    JwtUtil.generateToken(existingUser.get().getEmail())
             );
         } else {
             return new LoginResponse("Invalid password", null);
