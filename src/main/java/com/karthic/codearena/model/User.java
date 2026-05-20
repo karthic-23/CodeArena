@@ -3,9 +3,16 @@ package com.karthic.codearena.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+// 🔥 NEW IMPORTS
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
-public class User {
+public class User implements UserDetails { // 🔥 IMPORTANT
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +30,6 @@ public class User {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // Automatically set timestamp when inserting
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -38,7 +44,9 @@ public class User {
         this.password = password;
     }
 
-    // Getters & Setters
+    // ============================
+    // 🔹 GETTERS & SETTERS
+    // ============================
 
     public Long getId() {
         return id;
@@ -60,7 +68,8 @@ public class User {
         this.email = email;
     }
 
-    public String getPassword() {
+    @Override
+    public String getPassword() { // 🔥 REQUIRED
         return password;
     }
 
@@ -70,5 +79,39 @@ public class User {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    // ============================
+    // 🔥 SPRING SECURITY METHODS
+    // ============================
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(); // no roles for now
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email; // 🔥 VERY IMPORTANT
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }

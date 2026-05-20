@@ -5,7 +5,10 @@ import com.karthic.codearena.model.User;
 import com.karthic.codearena.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.karthic.codearena.dto.LoginRequest;
 import com.karthic.codearena.dto.LoginResponse;
+import com.karthic.codearena.dto.RegisterRequest;
 import com.karthic.codearena.config.JwtUtil;
 
 import java.util.Optional;
@@ -14,31 +17,38 @@ import java.util.List;
 // 🔐 Import for encryption
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-@Service // Marks this as business logic layer
-public class UserService {
+// 🔥 NEW IMPORTS (IMPORTANT)
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+@Service
+public class UserService implements UserDetailsService {
 
     @Autowired
-    private UserRepository userRepository; // talks to DB
+    private UserRepository userRepository;
 
-    // 🔐 Object to encrypt passwords
     private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     // ============================
-    // 🔹 REGISTER USER
+    // 🔹 REGISTER
     // ============================
-    public UserResponse registerUser(User user) {
+    public UserResponse registerUser(RegisterRequest request) {
 
-        Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
 
         if (existingUser.isPresent()) {
             throw new RuntimeException("Email already exists");
         }
 
-        user.setPassword(encoder.encode(user.getPassword()));
+        User user = new User(
+                request.getName(),
+                request.getEmail(),
+                encoder.encode(request.getPassword())
+        );
 
         User savedUser = userRepository.save(user);
 
-        // 🔥 Convert User → UserResponse (hide password)
         return new UserResponse(
                 savedUser.getId(),
                 savedUser.getName(),
@@ -47,25 +57,18 @@ public class UserService {
     }
 
     // ============================
-    // 🔹 GET ALL USERS
+    // 🔹 LOGIN
     // ============================
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-    
-    // ============================
-    // 🔹 LOGIN USER
-    // ============================
-    public LoginResponse loginUser(User user) {
+    public LoginResponse loginUser(LoginRequest request) {
 
-        Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
 
         if (existingUser.isEmpty()) {
             return new LoginResponse("User not found", null);
         }
 
         boolean isMatch = encoder.matches(
-                user.getPassword(),
+                request.getPassword(),
                 existingUser.get().getPassword()
         );
 
@@ -78,5 +81,20 @@ public class UserService {
             return new LoginResponse("Invalid password", null);
         }
     }
-    
+
+    // ============================
+    // 🔹 GET USERS
+    // ============================
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    // ============================
+    // 🔥 SPRING SECURITY
+    // ============================
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
 }
