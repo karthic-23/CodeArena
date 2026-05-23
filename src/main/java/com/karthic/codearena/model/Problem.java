@@ -23,6 +23,12 @@ public class Problem {
     @Column(columnDefinition = "TEXT")
     private String outputExample;
 
+    @Column(columnDefinition = "TEXT")
+    private String hiddenInput;
+
+    @Column(columnDefinition = "TEXT")
+    private String hiddenOutput;
+
     public Problem() {}
 
     public Problem(String title, String description, String difficulty,
@@ -51,4 +57,20 @@ public class Problem {
 
     public String getOutputExample() { return outputExample; }
     public void setOutputExample(String outputExample) { this.outputExample = outputExample; }
+
+    public String getHiddenInput() {
+    return hiddenInput;
+    }
+
+    public void setHiddenInput(String hiddenInput) {
+        this.hiddenInput = hiddenInput;
+    }
+
+    public String getHiddenOutput() {
+        return hiddenOutput;
+    }
+
+    public void setHiddenOutput(String hiddenOutput) {
+        this.hiddenOutput = hiddenOutput;
+    }
 }
