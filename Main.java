@@ -12,9 +12,9 @@ public class Main {
 
         int target = nums.remove(nums.size() - 1);
 
-        for(int i = 0; i < nums.size(); i++) {
-            for(int j = i + 1; j < nums.size(); j++) {
-                if(nums.get(i) + nums.get(j) == target) {
+        for (int i = 0; i < nums.size(); i++) {
+            for (int j = i + 1; j < nums.size(); j++) {
+                if (nums.get(i) + nums.get(j) == target) {
                     System.out.println("[" + i + "," + j + "]");
                     return;
                 }

@@ -1,18 +1,19 @@
 package com.karthic.codearena.service;
 
 import java.io.*;
+import java.util.concurrent.*;
 
 public class CodeExecutor {
 
     public static String executeJava(String code, String input) {
         try {
-            // 1. Write code to file
+            // 🔹 1. Write code to file
             File file = new File("Main.java");
             FileWriter writer = new FileWriter(file);
             writer.write(code);
             writer.close();
 
-            // 2. Compile
+            // 🔹 2. Compile
             Process compile = Runtime.getRuntime().exec("javac Main.java");
             compile.waitFor();
 
@@ -24,10 +25,10 @@ public class CodeExecutor {
                 return "COMPILATION_ERROR";
             }
 
-            // 3. Run program
+            // 🔹 3. Run program
             Process run = Runtime.getRuntime().exec("java Main");
 
-            // 🔥 SEND INPUT TO PROGRAM
+            // 🔥 Send input
             BufferedWriter processInput = new BufferedWriter(
                     new OutputStreamWriter(run.getOutputStream())
             );
@@ -37,21 +38,50 @@ public class CodeExecutor {
             processInput.flush();
             processInput.close();
 
-            // 🔥 READ OUTPUT
-            BufferedReader outputReader = new BufferedReader(
-                    new InputStreamReader(run.getInputStream())
-            );
+            // 🔥 Run with timeout
+            ExecutorService executor = Executors.newSingleThreadExecutor();
 
-            StringBuilder output = new StringBuilder();
-            String line;
+            Future<String> future = executor.submit(() -> {
+                BufferedReader outputReader = new BufferedReader(
+                        new InputStreamReader(run.getInputStream())
+                );
 
-            while ((line = outputReader.readLine()) != null) {
-                output.append(line);
+                StringBuilder output = new StringBuilder();
+                String line;
+
+                while ((line = outputReader.readLine()) != null) {
+                    output.append(line);
+                }
+
+                return output.toString();
+            });
+
+            String result;
+
+            try {
+                // 🔥 TIME LIMIT: 2 seconds
+                result = future.get(2, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                run.destroy();
+                executor.shutdown();
+                return "TIME_LIMIT_EXCEEDED";
             }
 
             run.waitFor();
 
-            return output.toString();
+            // 🔥 Runtime error check
+            BufferedReader runtimeError = new BufferedReader(
+                    new InputStreamReader(run.getErrorStream())
+            );
+
+            if (runtimeError.readLine() != null) {
+                executor.shutdown();
+                return "RUNTIME_ERROR";
+            }
+
+            executor.shutdown();
+
+            return result;
 
         } catch (Exception e) {
             e.printStackTrace();

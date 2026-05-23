@@ -1,12 +1,11 @@
 package com.karthic.codearena.service;
 
+import com.karthic.codearena.dto.SubmissionResponse;
 import com.karthic.codearena.model.*;
 import com.karthic.codearena.repository.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class SubmissionService {
@@ -20,8 +19,7 @@ public class SubmissionService {
     @Autowired
     private ProblemRepository problemRepository;
 
-    // 🔥 CREATE SUBMISSION (MULTI TEST CASE)
-    public Submission submitCode(String email, Long problemId, String code, String language) {
+    public SubmissionResponse submitCode(String email, Long problemId, String code, String language) {
 
         // 🔹 1. Get user
         User user = userRepository.findByEmail(email)
@@ -31,22 +29,37 @@ public class SubmissionService {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(() -> new RuntimeException("Problem not found"));
 
-        // 🔹 3. Get all inputs & outputs
-        String allInput = problem.getInputExample();
-        String allExpected = problem.getOutputExample();
+        // 🔥 3. Combine visible + hidden test cases
+        String allInput;
+        String allExpected;
 
-        // 🔥 Split test cases
-        String[] inputs = allInput.split("\\n\\n");   // separate test cases
-        String[] outputs = allExpected.split("\\n");  // expected outputs
+        if (problem.getHiddenInput() != null && !problem.getHiddenInput().isEmpty()
+                && problem.getHiddenOutput() != null && !problem.getHiddenOutput().isEmpty()) {
 
-        // 🔹 Safety check
+            // ✅ KEY FIX: combine both
+            allInput = problem.getInputExample() + "\n\n" + problem.getHiddenInput();
+            allExpected = problem.getOutputExample() + "\n" + problem.getHiddenOutput();
+
+        } else {
+            allInput = problem.getInputExample();
+            allExpected = problem.getOutputExample();
+        }
+
+        // 🔥 4. Split test cases
+        String[] inputs = allInput.split("\\n\\n");
+        String[] outputs = allExpected.split("\\n");
+
         if (inputs.length != outputs.length) {
             throw new RuntimeException("Mismatch between input and output test cases");
         }
 
-        boolean allPassed = true;
+        int totalTestCases = inputs.length;
+        int passedCount = 0;
 
-        // 🔥 4. Run each test case
+        String status = "ACCEPTED";
+        String errorType = null;
+
+        // 🔥 5. Execute test cases
         for (int i = 0; i < inputs.length; i++) {
 
             String input = inputs[i].trim();
@@ -54,35 +67,65 @@ public class SubmissionService {
 
             String actual = CodeExecutor.executeJava(code, input);
 
-            // 🔍 Debug logs (VERY useful)
             System.out.println("----- TEST CASE " + (i + 1) + " -----");
             System.out.println("INPUT:\n" + input);
             System.out.println("EXPECTED: " + expected);
             System.out.println("ACTUAL: " + actual);
 
-            // 🔹 Compare output
-            if (actual == null || !actual.trim().equals(expected)) {
-                allPassed = false;
+            // 🔥 Handle execution errors FIRST
+            if (actual.equals("COMPILATION_ERROR") ||
+                actual.equals("RUNTIME_ERROR") ||
+                actual.equals("TIME_LIMIT_EXCEEDED")) {
+
+                status = actual;
+                errorType = actual;
+                break;
+            }
+
+            // 🔹 Check correctness
+            if (actual != null && actual.trim().equals(expected)) {
+                passedCount++;
+            } else {
+                status = "WRONG_ANSWER";
+                errorType = "WRONG_ANSWER";
                 break;
             }
         }
 
-        // 🔹 Final status
-        String status = allPassed ? "ACCEPTED" : "WRONG_ANSWER";
-
-        // 🔹 Save submission
+        // 🔹 Save submission (minimal)
         Submission submission = new Submission(user, problem, code, language, status);
+        submissionRepository.save(submission);
 
-        return submissionRepository.save(submission);
+        // 🔹 Return clean DTO response
+        return new SubmissionResponse(
+                status,
+                passedCount,
+                totalTestCases,
+                errorType
+        );
     }
 
-    // 🔹 GET BY USER
-    public List<Submission> getUserSubmissions(Long userId) {
+    // 🔹 GET by userId
+    public java.util.List<Submission> getUserSubmissions(Long userId) {
         return submissionRepository.findByUserId(userId);
     }
 
-    // 🔹 GET BY PROBLEM
-    public List<Submission> getProblemSubmissions(Long problemId) {
+    // 🔹 GET by problemId
+    public java.util.List<Submission> getProblemSubmissions(Long problemId) {
         return submissionRepository.findByProblemId(problemId);
+    }
+
+    // 🔥 NEW: GET by user + problem
+    public java.util.List<Submission> getUserProblemSubmissions(Long userId, Long problemId) {
+        return submissionRepository.findByUserIdAndProblemId(userId, problemId);
+    }
+
+    // 🔥 BEST: GET using email (secure)
+    public java.util.List<Submission> getByUserEmailAndProblemId(String email, Long problemId) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return submissionRepository.findByUserIdAndProblemId(user.getId(), problemId);
     }
 }

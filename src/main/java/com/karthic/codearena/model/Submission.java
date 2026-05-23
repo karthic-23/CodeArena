@@ -11,12 +11,10 @@ public class Submission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 🔗 MANY submissions → ONE user
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    // 🔗 MANY submissions → ONE problem
     @ManyToOne
     @JoinColumn(name = "problem_id")
     private Problem problem;
@@ -24,11 +22,23 @@ public class Submission {
     @Column(columnDefinition = "TEXT")
     private String code;
 
-    private String language; // JAVA, PYTHON, etc.
+    private String language;
 
-    private String status; // ACCEPTED, WRONG_ANSWER
+    private String status;
 
     private LocalDateTime submittedAt;
+
+    // 🔥 NEW FIELDS
+    private Integer failedTestCase;
+
+    @Column(columnDefinition = "TEXT")
+    private String expectedOutput;
+
+    @Column(columnDefinition = "TEXT")
+    private String actualOutput;
+
+    @Column(columnDefinition = "TEXT")
+    private String errorMessage;
 
     @PrePersist
     protected void onSubmit() {
@@ -45,7 +55,7 @@ public class Submission {
         this.status = status;
     }
 
-    // Getters
+    // 🔹 GETTERS
     public Long getId() { return id; }
     public User getUser() { return user; }
     public Problem getProblem() { return problem; }
@@ -54,10 +64,20 @@ public class Submission {
     public String getStatus() { return status; }
     public LocalDateTime getSubmittedAt() { return submittedAt; }
 
-    // Setters
+    public Integer getFailedTestCase() { return failedTestCase; }
+    public String getExpectedOutput() { return expectedOutput; }
+    public String getActualOutput() { return actualOutput; }
+    public String getErrorMessage() { return errorMessage; }
+
+    // 🔹 SETTERS
     public void setUser(User user) { this.user = user; }
     public void setProblem(Problem problem) { this.problem = problem; }
     public void setCode(String code) { this.code = code; }
     public void setLanguage(String language) { this.language = language; }
     public void setStatus(String status) { this.status = status; }
+
+    public void setFailedTestCase(Integer failedTestCase) { this.failedTestCase = failedTestCase; }
+    public void setExpectedOutput(String expectedOutput) { this.expectedOutput = expectedOutput; }
+    public void setActualOutput(String actualOutput) { this.actualOutput = actualOutput; }
+    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
 }
