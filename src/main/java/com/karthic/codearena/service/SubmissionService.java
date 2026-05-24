@@ -1,11 +1,15 @@
 package com.karthic.codearena.service;
 
 import com.karthic.codearena.dto.SubmissionResponse;
+import com.karthic.codearena.dto.SubmissionDTO;
 import com.karthic.codearena.model.*;
 import com.karthic.codearena.repository.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class SubmissionService {
@@ -19,6 +23,9 @@ public class SubmissionService {
     @Autowired
     private ProblemRepository problemRepository;
 
+    // ============================================
+    // 🔥 SUBMIT CODE (CORE LOGIC)
+    // ============================================
     public SubmissionResponse submitCode(String email, Long problemId, String code, String language) {
 
         // 🔹 1. Get user
@@ -36,7 +43,6 @@ public class SubmissionService {
         if (problem.getHiddenInput() != null && !problem.getHiddenInput().isEmpty()
                 && problem.getHiddenOutput() != null && !problem.getHiddenOutput().isEmpty()) {
 
-            // ✅ KEY FIX: combine both
             allInput = problem.getInputExample() + "\n\n" + problem.getHiddenInput();
             allExpected = problem.getOutputExample() + "\n" + problem.getHiddenOutput();
 
@@ -45,7 +51,6 @@ public class SubmissionService {
             allExpected = problem.getOutputExample();
         }
 
-        // 🔥 4. Split test cases
         String[] inputs = allInput.split("\\n\\n");
         String[] outputs = allExpected.split("\\n");
 
@@ -59,7 +64,13 @@ public class SubmissionService {
         String status = "ACCEPTED";
         String errorType = null;
 
-        // 🔥 5. Execute test cases
+        int failedTestCaseIndex = -1;
+        String failedExpected = null;
+        String failedActual = null;
+
+        // ============================================
+        // 🔥 4. EXECUTE ALL TEST CASES
+        // ============================================
         for (int i = 0; i < inputs.length; i++) {
 
             String input = inputs[i].trim();
@@ -67,18 +78,14 @@ public class SubmissionService {
 
             String actual = CodeExecutor.executeJava(code, input);
 
-            System.out.println("----- TEST CASE " + (i + 1) + " -----");
-            System.out.println("INPUT:\n" + input);
-            System.out.println("EXPECTED: " + expected);
-            System.out.println("ACTUAL: " + actual);
-
-            // 🔥 Handle execution errors FIRST
+            // 🔴 Handle execution errors
             if (actual.equals("COMPILATION_ERROR") ||
                 actual.equals("RUNTIME_ERROR") ||
                 actual.equals("TIME_LIMIT_EXCEEDED")) {
 
                 status = actual;
                 errorType = actual;
+                failedTestCaseIndex = i + 1;
                 break;
             }
 
@@ -88,44 +95,98 @@ public class SubmissionService {
             } else {
                 status = "WRONG_ANSWER";
                 errorType = "WRONG_ANSWER";
+
+                failedTestCaseIndex = i + 1;
+                failedExpected = expected;
+                failedActual = actual;
                 break;
             }
         }
 
-        // 🔹 Save submission (minimal)
+        // ============================================
+        // 💾 5. STORE FULL RESULT IN DB
+        // ============================================
         Submission submission = new Submission(user, problem, code, language, status);
+
+        submission.setFailedTestCase(failedTestCaseIndex);
+        submission.setExpectedOutput(failedExpected);
+        submission.setActualOutput(failedActual);
+        submission.setErrorMessage(errorType);
+
         submissionRepository.save(submission);
 
-        // 🔹 Return clean DTO response
+        // ============================================
+        // 👀 6. RUN ONLY VISIBLE TEST CASES (FOR UI)
+        // ============================================
+        List<String> visibleOutputs = new ArrayList<>();
+
+        String[] visibleInputs = problem.getInputExample().split("\\n\\n");
+
+        for (String input : visibleInputs) {
+            String output = CodeExecutor.executeJava(code, input.trim());
+            visibleOutputs.add(output);
+        }
+
+        // ============================================
+        // 📤 7. RETURN CLEAN RESPONSE
+        // ============================================
         return new SubmissionResponse(
                 status,
                 passedCount,
                 totalTestCases,
-                errorType
+                errorType,
+                failedTestCaseIndex,
+                visibleOutputs
         );
     }
 
-    // 🔹 GET by userId
-    public java.util.List<Submission> getUserSubmissions(Long userId) {
-        return submissionRepository.findByUserId(userId);
+    // ============================================
+    // 📊 GET SUBMISSIONS (SAFE DTO)
+    // ============================================
+
+    public List<SubmissionDTO> getUserSubmissions(Long userId) {
+        return submissionRepository.findByUserId(userId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    // 🔹 GET by problemId
-    public java.util.List<Submission> getProblemSubmissions(Long problemId) {
-        return submissionRepository.findByProblemId(problemId);
+    public List<SubmissionDTO> getProblemSubmissions(Long problemId) {
+        return submissionRepository.findByProblemId(problemId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    // 🔥 NEW: GET by user + problem
-    public java.util.List<Submission> getUserProblemSubmissions(Long userId, Long problemId) {
-        return submissionRepository.findByUserIdAndProblemId(userId, problemId);
+    public List<SubmissionDTO> getUserProblemSubmissions(Long userId, Long problemId) {
+        return submissionRepository.findByUserIdAndProblemId(userId, problemId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    // 🔥 BEST: GET using email (secure)
-    public java.util.List<Submission> getByUserEmailAndProblemId(String email, Long problemId) {
+    public List<SubmissionDTO> getByUserEmailAndProblemId(String email, Long problemId) {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return submissionRepository.findByUserIdAndProblemId(user.getId(), problemId);
+        return submissionRepository.findByUserIdAndProblemId(user.getId(), problemId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // ============================================
+    // 🔧 HELPER METHOD (DTO CONVERSION)
+    // ============================================
+    private SubmissionDTO convertToDTO(Submission sub) {
+        return new SubmissionDTO(
+                sub.getId(),
+                sub.getUser().getEmail(),
+                sub.getProblem().getTitle(),
+                sub.getStatus(),
+                sub.getFailedTestCase() != null ? sub.getFailedTestCase() : -1,
+                sub.getLanguage()
+        );
     }
 }

@@ -1,91 +1,107 @@
 package com.karthic.codearena.service;
 
 import java.io.*;
-import java.util.concurrent.*;
+import java.nio.file.*;
+import java.util.concurrent.TimeUnit;
 
 public class CodeExecutor {
 
     public static String executeJava(String code, String input) {
+
+        String result = "";
+
+        // 🔥 Unique ID (timestamp)
+        long submissionId = System.currentTimeMillis();
+
+        String folderName = "temp/submission_" + submissionId;
+        String className = "Main_" + submissionId;
+        String javaFileName = className + ".java";
+
         try {
-            // 🔹 1. Write code to file
-            File file = new File("Main.java");
-            FileWriter writer = new FileWriter(file);
-            writer.write(code);
-            writer.close();
+            // ================================
+            // 📁 1. Create directory
+            // ================================
+            Path dirPath = Paths.get(folderName);
+            Files.createDirectories(dirPath);
 
-            // 🔹 2. Compile
-            Process compile = Runtime.getRuntime().exec("javac Main.java");
-            compile.waitFor();
+            // ================================
+            // ✏️ 2. Modify class name in code
+            // ================================
+            String modifiedCode = code.replaceAll("class\\s+Main", "class " + className);
 
-            BufferedReader compileError = new BufferedReader(
-                    new InputStreamReader(compile.getErrorStream())
-            );
+            // ================================
+            // 📄 3. Write Java file
+            // ================================
+            Path javaFilePath = dirPath.resolve(javaFileName);
+            Files.write(javaFilePath, modifiedCode.getBytes());
 
-            if (compileError.readLine() != null) {
+            // ================================
+            // ⚙️ 4. Compile
+            // ================================
+            ProcessBuilder compileProcess = new ProcessBuilder("javac", javaFileName);
+            compileProcess.directory(new File(folderName));
+            Process compile = compileProcess.start();
+
+            boolean compiled = compile.waitFor(5, TimeUnit.SECONDS);
+
+            if (!compiled || compile.exitValue() != 0) {
                 return "COMPILATION_ERROR";
             }
 
-            // 🔹 3. Run program
-            Process run = Runtime.getRuntime().exec("java Main");
+            // ================================
+            // ▶️ 5. Run program
+            // ================================
+            ProcessBuilder runProcess = new ProcessBuilder("java", className);
+            runProcess.directory(new File(folderName));
+            Process run = runProcess.start();
 
-            // 🔥 Send input
-            BufferedWriter processInput = new BufferedWriter(
-                    new OutputStreamWriter(run.getOutputStream())
-            );
+            // 🔹 Send input
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(run.getOutputStream()));
+            writer.write(input);
+            writer.newLine();
+            writer.flush();
+            writer.close();
 
-            processInput.write(input);
-            processInput.newLine();
-            processInput.flush();
-            processInput.close();
+            // 🔹 Read output
+            BufferedReader reader = new BufferedReader(new InputStreamReader(run.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
 
-            // 🔥 Run with timeout
-            ExecutorService executor = Executors.newSingleThreadExecutor();
+            // 🔹 Timeout control
+            boolean finished = run.waitFor(3, TimeUnit.SECONDS);
 
-            Future<String> future = executor.submit(() -> {
-                BufferedReader outputReader = new BufferedReader(
-                        new InputStreamReader(run.getInputStream())
-                );
-
-                StringBuilder output = new StringBuilder();
-                String line;
-
-                while ((line = outputReader.readLine()) != null) {
-                    output.append(line);
-                }
-
-                return output.toString();
-            });
-
-            String result;
-
-            try {
-                // 🔥 TIME LIMIT: 2 seconds
-                result = future.get(2, TimeUnit.SECONDS);
-            } catch (TimeoutException e) {
-                run.destroy();
-                executor.shutdown();
+            if (!finished) {
+                run.destroyForcibly();
                 return "TIME_LIMIT_EXCEEDED";
             }
 
-            run.waitFor();
-
-            // 🔥 Runtime error check
-            BufferedReader runtimeError = new BufferedReader(
-                    new InputStreamReader(run.getErrorStream())
-            );
-
-            if (runtimeError.readLine() != null) {
-                executor.shutdown();
-                return "RUNTIME_ERROR";
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
             }
 
-            executor.shutdown();
-
-            return result;
+            result = output.toString().trim();
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return "ERROR";
+            return "RUNTIME_ERROR";
+        } finally {
+            // ================================
+            // 🧹 6. Cleanup (delete folder)
+            // ================================
+            try {
+                deleteDirectory(new File(folderName));
+            } catch (Exception ignored) {}
         }
+
+        return result;
+    }
+
+    // 🔥 Helper: delete directory recursively
+    private static void deleteDirectory(File file) {
+        if (file.isDirectory()) {
+            for (File subFile : file.listFiles()) {
+                deleteDirectory(subFile);
+            }
+        }
+        file.delete();
     }
 }

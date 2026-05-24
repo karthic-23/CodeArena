@@ -1,7 +1,7 @@
 package com.karthic.codearena.controller;
 
 import com.karthic.codearena.dto.SubmissionResponse;
-import com.karthic.codearena.model.Submission;
+import com.karthic.codearena.dto.SubmissionDTO;
 import com.karthic.codearena.service.SubmissionService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,30 +28,30 @@ public class SubmissionController {
         return submissionService.submitCode(email, problemId, code, language);
     }
 
-    // 🔹 GET submissions by userId
+    // 🔹 GET submissions by userId (SAFE)
     @GetMapping("/user/{userId}")
-    public List<Submission> getUserSubmissions(@PathVariable Long userId) {
+    public List<SubmissionDTO> getUserSubmissions(@PathVariable Long userId) {
         return submissionService.getUserSubmissions(userId);
     }
 
-    // 🔹 GET submissions by problemId
+    // 🔹 GET submissions by problemId (SAFE)
     @GetMapping("/problem/{problemId}")
-    public List<Submission> getProblemSubmissions(@PathVariable Long problemId) {
+    public List<SubmissionDTO> getProblemSubmissions(@PathVariable Long problemId) {
         return submissionService.getProblemSubmissions(problemId);
     }
 
-    // 🔥 NEW: GET submissions by user + problem
+    // 🔹 GET submissions by user + problem
     @GetMapping("/user/{userId}/problem/{problemId}")
-    public List<Submission> getUserProblemSubmissions(
+    public List<SubmissionDTO> getUserProblemSubmissions(
             @PathVariable Long userId,
             @PathVariable Long problemId
     ) {
         return submissionService.getUserProblemSubmissions(userId, problemId);
     }
 
-    // 🔥 BEST: GET submissions of logged-in user for a problem
+    // 🔹 GET logged-in user submissions
     @GetMapping("/my/problem/{problemId}")
-    public List<Submission> getMySubmissionsForProblem(
+    public List<SubmissionDTO> getMySubmissionsForProblem(
             @PathVariable Long problemId,
             org.springframework.security.core.Authentication authentication
     ) {
