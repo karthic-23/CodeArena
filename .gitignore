@@ -1,0 +1,14 @@
+# Backend
+backend/target/
+backend/*.class
+
+# Frontend
+codearena-frontend/codearena-frontend/node_modules/
+codearena-frontend/codearena-frontend/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env
+.env
