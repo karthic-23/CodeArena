@@ -58,4 +58,40 @@ public class SubmissionController {
         String email = authentication.getName();
         return submissionService.getByUserEmailAndProblemId(email, problemId);
     }
+
+    @GetMapping("/status/{problemId}")
+    public String getProblemStatus(
+            @PathVariable Long problemId,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        String email = authentication.getName();
+
+        List<SubmissionDTO> submissions =
+                submissionService.getByUserEmailAndProblemId(email, problemId);
+
+        for (SubmissionDTO sub : submissions) {
+            if ("ACCEPTED".equalsIgnoreCase(sub.getStatus())) {
+                return "SOLVED";
+            }
+        }
+
+        return "UNSOLVED";
+    }
+
+    @GetMapping("/solved")
+    public List<Long> getSolvedProblems(
+            org.springframework.security.core.Authentication authentication
+    ) {
+        String email = authentication.getName();
+
+        List<SubmissionDTO> submissions =
+                submissionService.getByUserEmail(email);
+
+        return submissions.stream()
+                .filter(s -> "ACCEPTED".equalsIgnoreCase(s.getStatus()))
+                .map(SubmissionDTO::getProblemId)
+                .distinct()
+                .toList();
+    }
+        
 }

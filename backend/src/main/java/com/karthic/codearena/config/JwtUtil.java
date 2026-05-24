@@ -8,23 +8,23 @@ import java.util.Date;
 
 public class JwtUtil {
 
-    // 🔐 Secret key (used to sign token)
-    private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    // 🔥 FIXED SECRET KEY (PERSISTENT)
+    private static final String SECRET = "mysecretkeymysecretkeymysecretkey123";
+    private static final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    // ⏱ Token validity (1 hour)
     private static final long EXPIRATION_TIME = 1000 * 60 * 60;
 
     // 🔹 Generate Token
     public static String generateToken(String email) {
         return Jwts.builder()
-                .setSubject(email) // store email inside token
+                .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SECRET_KEY)
                 .compact();
     }
 
-    // 🔹 Extract Email from Token
+    // 🔹 Extract Email
     public static String extractEmail(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(SECRET_KEY)
@@ -34,16 +34,25 @@ public class JwtUtil {
                 .getSubject();
     }
 
-    // 🔹 Validate Token
-    public static boolean validateToken(String token) {
+    // 🔥 IMPROVED VALIDATION
+    public static boolean validateToken(String token, org.springframework.security.core.userdetails.UserDetails userDetails) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(SECRET_KEY)
-                    .build()
-                    .parseClaimsJws(token);
-            return true;
+            String email = extractEmail(token);
+            return email.equals(userDetails.getUsername()) && !isTokenExpired(token);
         } catch (Exception e) {
             return false;
         }
+    }
+
+    // 🔹 Check expiration
+    private static boolean isTokenExpired(String token) {
+        Date expiration = Jwts.parserBuilder()
+                .setSigningKey(SECRET_KEY)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getExpiration();
+
+        return expiration.before(new Date());
     }
 }

@@ -184,13 +184,18 @@ public class SubmissionService {
 
     public List<SubmissionDTO> getByUserEmailAndProblemId(String email, Long problemId) {
 
+        // 🔥 STEP 1: Get user from email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return submissionRepository.findByUserIdAndProblemId(user.getId(), problemId)
-                .stream()
+        // 🔥 STEP 2: Fetch submissions using userId (IMPORTANT FIX)
+        List<Submission> submissions =
+                submissionRepository.findByUserIdAndProblemId(user.getId(), problemId);
+
+        // 🔥 STEP 3: Convert to DTO
+        return submissions.stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // ============================================
@@ -201,10 +206,24 @@ public class SubmissionService {
         return new SubmissionDTO(
                 sub.getId(),
                 sub.getUser().getEmail(),
+                sub.getProblem().getId(),   
                 sub.getProblem().getTitle(),
                 sub.getStatus(),
                 sub.getFailedTestCase() != null ? sub.getFailedTestCase() : -1,
                 sub.getLanguage()
         );
+    }
+
+    public List<SubmissionDTO> getByUserEmail(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Submission> submissions =
+                submissionRepository.findByUserId(user.getId());
+
+        return submissions.stream()
+                .map(this::convertToDTO)
+                .toList();
     }
 }

@@ -4,21 +4,58 @@ import { useNavigate } from "react-router-dom";
 function Problems() {
   const [problems, setProblems] = useState([]);
   const [search, setSearch] = useState("");
+  const [solvedProblems, setSolvedProblems] = useState([]);
+
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchProblems();
+    fetchSolved();
+
+    // 🔥 REFRESH WHEN USER RETURNS TO PAGE
+    window.addEventListener("focus", fetchSolved);
+
+    return () => {
+      window.removeEventListener("focus", fetchSolved);
+    };
   }, []);
 
+  // 🔹 FETCH ALL PROBLEMS
   const fetchProblems = async () => {
     const token = localStorage.getItem("token");
 
-    const res = await fetch("http://localhost:8080/api/problems", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    try {
+      const res = await fetch("http://localhost:8080/api/problems", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-    const data = await res.json();
-    setProblems(data);
+      const data = await res.json();
+      setProblems(data);
+
+    } catch (err) {
+      console.error("Problems fetch failed");
+    }
+  };
+
+  // 🔹 FETCH SOLVED PROBLEMS
+  const fetchSolved = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:8080/api/submissions/solved", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+
+      console.log("Solved API:", data);
+
+      // 🔥 FIX TYPE HERE
+      setSolvedProblems(data.map(Number));
+
+    } catch (err) {
+      console.error("Solved fetch failed");
+    }
   };
 
   const logout = () => {
@@ -50,27 +87,40 @@ function Problems() {
 
       {/* GRID */}
       <div style={styles.grid}>
-        {filtered.map((p) => (
-          <div
-            key={p.id}
-            style={styles.card}
-            onClick={() => navigate(`/problem/${p.id}`)}
-          >
-            <h3>{p.title}</h3>
+        {filtered.map((p) => {
 
-            <span style={{
-              ...styles.badge,
-              background:
-                p.difficulty === "EASY"
-                  ? "#22c55e"
-                  : p.difficulty === "MEDIUM"
-                  ? "#facc15"
-                  : "#ef4444"
-            }}>
-              {p.difficulty}
-            </span>
-          </div>
-        ))}
+          // 🔥 FINAL SOLVED CHECK
+          const isSolved = solvedProblems.includes(Number(p.id));
+
+          return (
+            <div
+              key={p.id}
+              style={styles.card}
+              onClick={() => navigate(`/problem/${p.id}`)}
+            >
+              <h3>
+                {isSolved && (
+                  <span style={{ color: "#22c55e", marginRight: "8px" }}>
+                    ✔
+                  </span>
+                )}
+                {p.title}
+              </h3>
+
+              <span style={{
+                ...styles.badge,
+                background:
+                  p.difficulty === "EASY"
+                    ? "#22c55e"
+                    : p.difficulty === "MEDIUM"
+                    ? "#facc15"
+                    : "#ef4444"
+              }}>
+                {p.difficulty}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
     </div>

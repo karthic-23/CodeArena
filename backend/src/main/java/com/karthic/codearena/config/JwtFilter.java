@@ -33,28 +33,23 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 🔹 1. Get Authorization header
         String authHeader = request.getHeader("Authorization");
 
         String token = null;
         String email = null;
 
-        // 🔹 2. Check if header contains Bearer token
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7); // remove "Bearer "
+            token = authHeader.substring(7);
             email = JwtUtil.extractEmail(token);
         }
 
-        // 🔹 3. If email exists and no authentication yet
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // 🔹 4. Load user from DB
             UserDetails userDetails = userService.loadUserByUsername(email);
 
-            // 🔹 5. Validate token
-            if (JwtUtil.validateToken(token)) {
+            // 🔥 FIX HERE
+            if (JwtUtil.validateToken(token, userDetails)) {
 
-                // 🔹 6. Create authentication object
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
@@ -66,12 +61,10 @@ public class JwtFilter extends OncePerRequestFilter {
                         new WebAuthenticationDetailsSource().buildDetails(request)
                 );
 
-                // 🔹 7. Set authentication in Spring context
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
 
-        // 🔹 8. Continue request
         filterChain.doFilter(request, response);
     }
 }

@@ -5,13 +5,22 @@ function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
-      alert("All fields are required");
+      setError("All fields are required");
       return;
     }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
 
     try {
       const res = await fetch("http://localhost:8080/api/users/register", {
@@ -25,70 +34,38 @@ function Register() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Registration failed");
+        setError(data.message || "Registration failed");
+        setLoading(false);
         return;
       }
 
-      alert("Registration successful");
-      navigate("/");
+      setSuccess("Registration successful");
+
+      setTimeout(() => navigate("/"), 1500);
 
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      setError("Server error");
     }
+
+    setLoading(false);
   };
 
   return (
     <div style={styles.container}>
 
-      {/* 🔥 TAGLINE */}
-      <div style={styles.tagline}>
-        Start your coding journey today
-      </div>
-
-      {/* 🔥 CODE BACKGROUND */}
-      <div style={styles.codeBg}>
-{`function solve(a, b) {
-  return a + b;
-}
-
-class Solution {
-  public static void main(String[] args) {
-    System.out.println("CodeArena");
-  }
-}
-
-for(int i = 0; i < n; i++) {
-  cout << i << endl;
-}
-
-def solve():
-    return input()
-
-while(true) {
-    // keep coding
-}
-`.repeat(20)}
-      </div>
-
-      {/* 🔥 DOTS */}
-      <div style={styles.dots}></div>
-
-      {/* 🔥 GLOW */}
-      <div style={styles.glow1}></div>
-      <div style={styles.glow2}></div>
-
-      {/* 🔥 CARD */}
       <div style={styles.card}>
         <h1 style={styles.title}>CodeArena</h1>
         <p style={styles.subtitle}>Create your account</p>
+
+        {/* 🔥 ERROR + SUCCESS */}
+        {error && <div style={styles.errorBox}>{error}</div>}
+        {success && <div style={styles.successBox}>{success}</div>}
 
         <input
           type="text"
           placeholder="Name"
           style={styles.input}
-          onFocus={(e) => e.target.style.border = "1px solid #8b5cf6"}
-          onBlur={(e) => e.target.style.border = "1px solid rgba(255,255,255,0.15)"}
           onChange={(e) => setName(e.target.value)}
         />
 
@@ -96,8 +73,6 @@ while(true) {
           type="email"
           placeholder="Email"
           style={styles.input}
-          onFocus={(e) => e.target.style.border = "1px solid #8b5cf6"}
-          onBlur={(e) => e.target.style.border = "1px solid rgba(255,255,255,0.15)"}
           onChange={(e) => setEmail(e.target.value)}
         />
 
@@ -105,30 +80,17 @@ while(true) {
           type="password"
           placeholder="Password"
           style={styles.input}
-          onFocus={(e) => e.target.style.border = "1px solid #8b5cf6"}
-          onBlur={(e) => e.target.style.border = "1px solid rgba(255,255,255,0.15)"}
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button
-          style={styles.button}
-          onClick={handleRegister}
-          onMouseOver={(e) => (e.target.style.transform = "scale(1.03)")}
-          onMouseOut={(e) => (e.target.style.transform = "scale(1)")}
-        >
-          Register
+        <button style={styles.button} onClick={handleRegister}>
+          {loading ? "Registering..." : "Register"}
         </button>
 
         <p style={styles.link} onClick={() => navigate("/")}>
           Already have an account? <span style={{ color: "#8b5cf6" }}>Login</span>
         </p>
       </div>
-
-      {/* 🔥 FOOTER */}
-      <div style={styles.footer}>
-        Built with focus by Karthic
-      </div>
-
     </div>
   );
 }
@@ -138,128 +100,68 @@ export default Register;
 const styles = {
   container: {
     height: "100vh",
-    width: "100vw",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     background: "linear-gradient(135deg, #0f172a, #1e293b)",
-    position: "relative",
-    overflow: "hidden",
-    fontFamily: "Inter, sans-serif",
     color: "#fff"
-  },
-
-  tagline: {
-    position: "absolute",
-    top: "40px",
-    fontSize: "14px",
-    color: "#888",
-    letterSpacing: "1px"
-  },
-
-  codeBg: {
-    position: "absolute",
-    width: "200%",
-    height: "200%",
-    top: "-50%",
-    left: "-50%",
-    fontSize: "14px",
-    lineHeight: "22px",
-    color: "rgba(255,255,255,0.04)",
-    whiteSpace: "pre",
-    transform: "rotate(-15deg)",
-    zIndex: 0
-  },
-
-  dots: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    backgroundImage: "radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)",
-    backgroundSize: "40px 40px",
-    zIndex: 0
-  },
-
-  glow1: {
-    position: "absolute",
-    width: "500px",
-    height: "500px",
-    background: "radial-gradient(circle, rgba(99,102,241,0.25), transparent)",
-    top: "-150px",
-    left: "-150px",
-    filter: "blur(120px)",
-    zIndex: 1
-  },
-
-  glow2: {
-    position: "absolute",
-    width: "500px",
-    height: "500px",
-    background: "radial-gradient(circle, rgba(139,92,246,0.25), transparent)",
-    bottom: "-150px",
-    right: "-150px",
-    filter: "blur(120px)",
-    zIndex: 1
   },
 
   card: {
     width: "360px",
-    padding: "35px",
-    borderRadius: "16px",
+    padding: "30px",
+    borderRadius: "15px",
+    backdropFilter: "blur(15px)",
     background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.08)",
-    backdropFilter: "blur(12px)",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
     display: "flex",
     flexDirection: "column",
-    gap: "18px",
-    zIndex: 2
+    gap: "15px"
   },
 
-  title: {
-    textAlign: "center",
-    margin: 0,
-    fontSize: "28px"
-  },
-
-  subtitle: {
-    textAlign: "center",
-    fontSize: "13px",
-    color: "#aaa"
-  },
+  title: { textAlign: "center" },
+  subtitle: { textAlign: "center", color: "#aaa" },
 
   input: {
-    padding: "14px",
-    borderRadius: "10px",
+    padding: "12px",
+    borderRadius: "8px",
     border: "1px solid rgba(255,255,255,0.15)",
     background: "rgba(255,255,255,0.05)",
-    color: "#fff",
-    outline: "none",
-    transition: "0.2s"
+    color: "#fff"
   },
 
   button: {
-    padding: "14px",
-    borderRadius: "10px",
+    padding: "12px",
+    borderRadius: "8px",
+    background: "#6366f1",
     border: "none",
-    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
     color: "#fff",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "0.2s"
+    cursor: "pointer"
   },
 
   link: {
     textAlign: "center",
-    fontSize: "13px",
     cursor: "pointer",
     color: "#aaa"
   },
 
-  footer: {
-    position: "absolute",
-    bottom: "20px",
-    fontSize: "12px",
-    color: "#777"
+  errorBox: {
+    padding: "10px",
+    borderRadius: "8px",
+    background: "rgba(239,68,68,0.15)",
+    border: "1px solid #ef4444",
+    color: "#fca5a5",
+    fontSize: "13px",
+    textAlign: "center"
+  },
+
+  successBox: {
+    padding: "10px",
+    borderRadius: "8px",
+    background: "rgba(34,197,94,0.15)",
+    border: "1px solid #22c55e",
+    color: "#86efac",
+    fontSize: "13px",
+    textAlign: "center"
   }
 };
