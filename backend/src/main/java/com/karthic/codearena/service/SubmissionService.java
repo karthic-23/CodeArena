@@ -36,29 +36,36 @@ public class SubmissionService {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(() -> new RuntimeException("Problem not found"));
 
-        // 🔥 3. Combine visible + hidden test cases
-        String allInput;
-        String allExpected;
+        // ============================================
+        // 🔥 3. BUILD TEST CASE LISTS (FIXED)
+        // ============================================
 
-        if (problem.getHiddenInput() != null && !problem.getHiddenInput().isEmpty()
-                && problem.getHiddenOutput() != null && !problem.getHiddenOutput().isEmpty()) {
+        List<String> inputs = new ArrayList<>();
+        List<String> outputs = new ArrayList<>();
 
-            allInput = problem.getInputExample() + "\n\n" + problem.getHiddenInput();
-            allExpected = problem.getOutputExample() + "\n" + problem.getHiddenOutput();
-
-        } else {
-            allInput = problem.getInputExample();
-            allExpected = problem.getOutputExample();
+        // ✅ Visible test cases (FIXED: use ;)
+        if (problem.getInputExample() != null && !problem.getInputExample().isEmpty()) {
+            inputs.addAll(Arrays.asList(problem.getInputExample().split(";")));
         }
 
-        String[] inputs = allInput.split("\\n\\n");
-        String[] outputs = allExpected.split("\\n");
-
-        if (inputs.length != outputs.length) {
-            throw new RuntimeException("Mismatch between input and output test cases");
+        if (problem.getOutputExample() != null && !problem.getOutputExample().isEmpty()) {
+            outputs.addAll(Arrays.asList(problem.getOutputExample().split(";")));
         }
 
-        int totalTestCases = inputs.length;
+        // ✅ Hidden test cases (already correct)
+        if (problem.getHiddenInput() != null && !problem.getHiddenInput().isEmpty()) {
+            inputs.addAll(Arrays.asList(problem.getHiddenInput().split(";")));
+        }
+
+        if (problem.getHiddenOutput() != null && !problem.getHiddenOutput().isEmpty()) {
+            outputs.addAll(Arrays.asList(problem.getHiddenOutput().split(";")));
+        }
+
+        if (inputs.size() != outputs.size()) {
+            throw new RuntimeException("Mismatch between test cases");
+        }
+
+        int totalTestCases = inputs.size();
         int passedCount = 0;
 
         String status = "ACCEPTED";
@@ -69,16 +76,17 @@ public class SubmissionService {
         String failedActual = null;
 
         // ============================================
-        // 🔥 4. EXECUTE ALL TEST CASES
+        // 🔥 4. EXECUTE TEST CASES
         // ============================================
-        for (int i = 0; i < inputs.length; i++) {
 
-            String input = inputs[i].trim();
-            String expected = outputs[i].trim();
+        for (int i = 0; i < inputs.size(); i++) {
+
+            String input = inputs.get(i).trim();
+            String expected = outputs.get(i).trim();
 
             String actual = CodeExecutor.executeJava(code, input);
 
-            // 🔴 Handle execution errors
+            // 🔴 Handle errors
             if (actual.equals("COMPILATION_ERROR") ||
                 actual.equals("RUNTIME_ERROR") ||
                 actual.equals("TIME_LIMIT_EXCEEDED")) {
@@ -89,8 +97,12 @@ public class SubmissionService {
                 break;
             }
 
-            // 🔹 Check correctness
-            if (actual != null && actual.trim().equals(expected)) {
+            // ✅ Normalize outputs (CRITICAL FIX)
+            actual = actual.replace("\r", "").trim().replaceAll("\\s+", " ");
+            expected = expected.replace("\r", "").trim().replaceAll("\\s+", " ");
+
+            // ✅ Compare properly
+            if (actual.equals(expected)) {
                 passedCount++;
             } else {
                 status = "WRONG_ANSWER";
@@ -104,8 +116,9 @@ public class SubmissionService {
         }
 
         // ============================================
-        // 💾 5. STORE FULL RESULT IN DB
+        // 💾 5. SAVE SUBMISSION
         // ============================================
+
         Submission submission = new Submission(user, problem, code, language, status);
 
         submission.setFailedTestCase(failedTestCaseIndex);
@@ -116,20 +129,24 @@ public class SubmissionService {
         submissionRepository.save(submission);
 
         // ============================================
-        // 👀 6. RUN ONLY VISIBLE TEST CASES (FOR UI)
+        // 👀 6. RUN VISIBLE TEST CASES (FOR UI)
         // ============================================
+
         List<String> visibleOutputs = new ArrayList<>();
 
-        String[] visibleInputs = problem.getInputExample().split("\\n\\n");
+        if (problem.getInputExample() != null) {
+            String[] visibleInputs = problem.getInputExample().split(";");
 
-        for (String input : visibleInputs) {
-            String output = CodeExecutor.executeJava(code, input.trim());
-            visibleOutputs.add(output);
+            for (String input : visibleInputs) {
+                String output = CodeExecutor.executeJava(code, input.trim());
+                visibleOutputs.add(output.trim());
+            }
         }
 
         // ============================================
-        // 📤 7. RETURN CLEAN RESPONSE
+        // 📤 7. RESPONSE
         // ============================================
+
         return new SubmissionResponse(
                 status,
                 passedCount,
@@ -141,7 +158,7 @@ public class SubmissionService {
     }
 
     // ============================================
-    // 📊 GET SUBMISSIONS (SAFE DTO)
+    // 📊 GET SUBMISSIONS
     // ============================================
 
     public List<SubmissionDTO> getUserSubmissions(Long userId) {
@@ -177,8 +194,9 @@ public class SubmissionService {
     }
 
     // ============================================
-    // 🔧 HELPER METHOD (DTO CONVERSION)
+    // 🔧 DTO CONVERSION
     // ============================================
+
     private SubmissionDTO convertToDTO(Submission sub) {
         return new SubmissionDTO(
                 sub.getId(),
