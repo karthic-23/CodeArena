@@ -2,16 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Register() {
-  const [name, setName] = useState("");   // 🔥 FIX
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const navigate = useNavigate();
 
   const handleRegister = async () => {
-
     if (!name || !email || !password) {
-      alert("Fill all fields");
+      alert("All fields are required");
       return;
     }
 
@@ -21,11 +19,7 @@ function Register() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          name,      // 🔥 IMPORTANT
-          email,
-          password
-        })
+        body: JSON.stringify({ name, email, password })
       });
 
       const data = await res.json();
@@ -35,8 +29,7 @@ function Register() {
         return;
       }
 
-      alert("Registered successfully");
-
+      alert("Registration successful");
       navigate("/");
 
     } catch (err) {
@@ -46,38 +39,227 @@ function Register() {
   };
 
   return (
-    <div>
-      <h1>Register</h1>
+    <div style={styles.container}>
 
-      <input
-        placeholder="Name"
-        onChange={(e) => setName(e.target.value)}
-      />
+      {/* 🔥 TAGLINE */}
+      <div style={styles.tagline}>
+        Start your coding journey today
+      </div>
 
-      <br /><br />
+      {/* 🔥 CODE BACKGROUND */}
+      <div style={styles.codeBg}>
+{`function solve(a, b) {
+  return a + b;
+}
 
-      <input
-        placeholder="Email"
-        onChange={(e) => setEmail(e.target.value)}
-      />
+class Solution {
+  public static void main(String[] args) {
+    System.out.println("CodeArena");
+  }
+}
 
-      <br /><br />
+for(int i = 0; i < n; i++) {
+  cout << i << endl;
+}
 
-      <input
-        type="password"
-        placeholder="Password"
-        onChange={(e) => setPassword(e.target.value)}
-      />
+def solve():
+    return input()
 
-      <br /><br />
+while(true) {
+    // keep coding
+}
+`.repeat(20)}
+      </div>
 
-      <button onClick={handleRegister}>Register</button>
+      {/* 🔥 DOTS */}
+      <div style={styles.dots}></div>
 
-      <p onClick={() => navigate("/")}>
-        Go to Login
-      </p>
+      {/* 🔥 GLOW */}
+      <div style={styles.glow1}></div>
+      <div style={styles.glow2}></div>
+
+      {/* 🔥 CARD */}
+      <div style={styles.card}>
+        <h1 style={styles.title}>CodeArena</h1>
+        <p style={styles.subtitle}>Create your account</p>
+
+        <input
+          type="text"
+          placeholder="Name"
+          style={styles.input}
+          onFocus={(e) => e.target.style.border = "1px solid #8b5cf6"}
+          onBlur={(e) => e.target.style.border = "1px solid rgba(255,255,255,0.15)"}
+          onChange={(e) => setName(e.target.value)}
+        />
+
+        <input
+          type="email"
+          placeholder="Email"
+          style={styles.input}
+          onFocus={(e) => e.target.style.border = "1px solid #8b5cf6"}
+          onBlur={(e) => e.target.style.border = "1px solid rgba(255,255,255,0.15)"}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <input
+          type="password"
+          placeholder="Password"
+          style={styles.input}
+          onFocus={(e) => e.target.style.border = "1px solid #8b5cf6"}
+          onBlur={(e) => e.target.style.border = "1px solid rgba(255,255,255,0.15)"}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button
+          style={styles.button}
+          onClick={handleRegister}
+          onMouseOver={(e) => (e.target.style.transform = "scale(1.03)")}
+          onMouseOut={(e) => (e.target.style.transform = "scale(1)")}
+        >
+          Register
+        </button>
+
+        <p style={styles.link} onClick={() => navigate("/")}>
+          Already have an account? <span style={{ color: "#8b5cf6" }}>Login</span>
+        </p>
+      </div>
+
+      {/* 🔥 FOOTER */}
+      <div style={styles.footer}>
+        Built with focus by Karthic
+      </div>
+
     </div>
   );
 }
 
 export default Register;
+
+const styles = {
+  container: {
+    height: "100vh",
+    width: "100vw",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "linear-gradient(135deg, #0f172a, #1e293b)",
+    position: "relative",
+    overflow: "hidden",
+    fontFamily: "Inter, sans-serif",
+    color: "#fff"
+  },
+
+  tagline: {
+    position: "absolute",
+    top: "40px",
+    fontSize: "14px",
+    color: "#888",
+    letterSpacing: "1px"
+  },
+
+  codeBg: {
+    position: "absolute",
+    width: "200%",
+    height: "200%",
+    top: "-50%",
+    left: "-50%",
+    fontSize: "14px",
+    lineHeight: "22px",
+    color: "rgba(255,255,255,0.04)",
+    whiteSpace: "pre",
+    transform: "rotate(-15deg)",
+    zIndex: 0
+  },
+
+  dots: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    backgroundImage: "radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)",
+    backgroundSize: "40px 40px",
+    zIndex: 0
+  },
+
+  glow1: {
+    position: "absolute",
+    width: "500px",
+    height: "500px",
+    background: "radial-gradient(circle, rgba(99,102,241,0.25), transparent)",
+    top: "-150px",
+    left: "-150px",
+    filter: "blur(120px)",
+    zIndex: 1
+  },
+
+  glow2: {
+    position: "absolute",
+    width: "500px",
+    height: "500px",
+    background: "radial-gradient(circle, rgba(139,92,246,0.25), transparent)",
+    bottom: "-150px",
+    right: "-150px",
+    filter: "blur(120px)",
+    zIndex: 1
+  },
+
+  card: {
+    width: "360px",
+    padding: "35px",
+    borderRadius: "16px",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px",
+    zIndex: 2
+  },
+
+  title: {
+    textAlign: "center",
+    margin: 0,
+    fontSize: "28px"
+  },
+
+  subtitle: {
+    textAlign: "center",
+    fontSize: "13px",
+    color: "#aaa"
+  },
+
+  input: {
+    padding: "14px",
+    borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,0.15)",
+    background: "rgba(255,255,255,0.05)",
+    color: "#fff",
+    outline: "none",
+    transition: "0.2s"
+  },
+
+  button: {
+    padding: "14px",
+    borderRadius: "10px",
+    border: "none",
+    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+    color: "#fff",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "0.2s"
+  },
+
+  link: {
+    textAlign: "center",
+    fontSize: "13px",
+    cursor: "pointer",
+    color: "#aaa"
+  },
+
+  footer: {
+    position: "absolute",
+    bottom: "20px",
+    fontSize: "12px",
+    color: "#777"
+  }
+};

@@ -6,25 +6,16 @@ function ProblemPage() {
   const { id } = useParams();
 
   const [problem, setProblem] = useState(null);
-
-  // ✅ Default template
   const [code, setCode] = useState(`class Main {
     public static void main(String[] args) {
-        java.util.Scanner sc = new java.util.Scanner(System.in);
-
-        int a = sc.nextInt();
-        int b = sc.nextInt();
-
-        System.out.println(a + b);
+        System.out.println("Hello World");
     }
 }`);
-
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  // 🔥 Run feature
   const [customInput, setCustomInput] = useState("");
   const [runOutput, setRunOutput] = useState("");
+  const [result, setResult] = useState(null);
+
+  const [loading, setLoading] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
 
   useEffect(() => {
@@ -34,175 +25,203 @@ function ProblemPage() {
   const fetchProblem = async () => {
     const token = localStorage.getItem("token");
 
-    try {
-      const res = await fetch(`http://localhost:8080/api/problems/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+    const res = await fetch(`http://localhost:8080/api/problems/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-      const data = await res.json();
-      setProblem(data);
-
-    } catch (err) {
-      console.error(err);
-    }
+    const data = await res.json();
+    setProblem(data);
   };
 
-  // 🔥 SUBMIT
-  const handleSubmit = async () => {
-    const token = localStorage.getItem("token");
-
-    setLoading(true);
-    setResult(null);
-
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/submissions?problemId=${id}&language=JAVA`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain",
-            Authorization: `Bearer ${token}`
-          },
-          body: code
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Submission failed");
-        setLoading(false);
-        return;
-      }
-
-      setResult(data);
-
-    } catch (err) {
-      console.error(err);
-      alert("Submission failed");
-    }
-
-    setLoading(false);
-  };
-
-  // 🔥 RUN
   const handleRun = async () => {
     const token = localStorage.getItem("token");
 
     setRunLoading(true);
     setRunOutput("");
 
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/run?language=JAVA&input=${encodeURIComponent(customInput)}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain",
-            Authorization: `Bearer ${token}`
-          },
-          body: code
-        }
-      );
+    const res = await fetch(
+      `http://localhost:8080/api/run?language=JAVA&input=${encodeURIComponent(customInput)}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          Authorization: `Bearer ${token}`
+        },
+        body: code
+      }
+    );
 
-      const data = await res.text();
-      setRunOutput(data);
-
-    } catch (err) {
-      console.error(err);
-      alert("Run failed");
-    }
-
+    const data = await res.text();
+    setRunOutput(data);
     setRunLoading(false);
   };
 
-  if (!problem) return <p>Loading...</p>;
+  const handleSubmit = async () => {
+    const token = localStorage.getItem("token");
+
+    setLoading(true);
+    setResult(null);
+
+    const res = await fetch(
+      `http://localhost:8080/api/submissions?problemId=${id}&language=JAVA`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          Authorization: `Bearer ${token}`
+        },
+        body: code
+      }
+    );
+
+    const data = await res.json();
+    setResult(data);
+    setLoading(false);
+  };
+
+  if (!problem) return <p style={{ color: "white" }}>Loading...</p>;
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>{problem.title}</h1>
+    <div style={styles.container}>
 
-      <p><b>Difficulty:</b> {problem.difficulty}</p>
-      <p>{problem.description}</p>
+      {/* LEFT SIDE */}
+      <div style={styles.left}>
+        <h2>{problem.title}</h2>
 
-      <h3>Code Editor</h3>
+        <p style={styles.diff}>
+          Difficulty: {problem.difficulty}
+        </p>
 
-      {/* 🔥 MONACO EDITOR */}
-      <Editor
-        height="400px"
-        defaultLanguage="java"
-        theme="vs-dark"
-        value={code}
-        onChange={(value) => setCode(value || "")}
-      />
+        <p style={styles.desc}>{problem.description}</p>
+      </div>
 
-      <br />
+      {/* RIGHT SIDE */}
+      <div style={styles.right}>
 
-      {/* 🔥 CUSTOM INPUT */}
-      <h3>Custom Input</h3>
-      <textarea
-        rows="4"
-        cols="50"
-        value={customInput}
-        onChange={(e) => setCustomInput(e.target.value)}
-        placeholder="Example: 2 7"
-      />
+        {/* EDITOR */}
+        <Editor
+          height="50%"
+          theme="vs-dark"
+          defaultLanguage="java"
+          value={code}
+          onChange={(value) => setCode(value || "")}
+        />
 
-      <br /><br />
+        {/* INPUT */}
+        <textarea
+          placeholder="Custom Input"
+          style={styles.input}
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+        />
 
-      {/* 🔥 BUTTONS */}
-      <button onClick={handleRun} disabled={runLoading}>
-        {runLoading ? "Running..." : "Run"}
-      </button>
+        {/* BUTTONS */}
+        <div style={styles.btnRow}>
+          <button style={styles.runBtn} onClick={handleRun}>
+            {runLoading ? "Running..." : "Run"}
+          </button>
 
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        style={{ marginLeft: "10px" }}
-      >
-        {loading ? "Compiling & Running..." : "Submit"}
-      </button>
-
-      {/* 🔥 RUN OUTPUT */}
-      {runOutput && (
-        <div style={{ marginTop: "15px", border: "1px solid gray", padding: "10px" }}>
-          <b>Output:</b>
-          <pre>{runOutput}</pre>
+          <button style={styles.submitBtn} onClick={handleSubmit}>
+            {loading ? "Submitting..." : "Submit"}
+          </button>
         </div>
-      )}
 
-      {/* 🔥 RESULT */}
-      {result && (
-        <div style={{ marginTop: "20px", border: "1px solid black", padding: "10px" }}>
-          <h3>Submission Result</h3>
+        {/* OUTPUT */}
+        {runOutput && (
+          <div style={styles.output}>
+            <b>Output:</b>
+            <pre>{runOutput}</pre>
+          </div>
+        )}
 
-          <p>
-            <b>Status:</b>{" "}
-            <span style={{
-              color:
-                result.status === "ACCEPTED"
-                  ? "green"
-                  : result.status === "WRONG_ANSWER"
-                  ? "red"
-                  : "orange"
-            }}>
-              {result.status}
-            </span>
-          </p>
+        {/* RESULT */}
+        {result && (
+          <div style={styles.result}>
+            <b>Status:</b> {result.status}
+          </div>
+        )}
 
-          <p>
-            <b>Passed:</b> {result.passedTestCases} / {result.totalTestCases}
-          </p>
-
-          {result.errorType && (
-            <p><b>Error:</b> {result.errorType}</p>
-          )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
 
 export default ProblemPage;
+
+const styles = {
+  container: {
+    display: "flex",
+    height: "100vh",
+    background: "#0f172a",
+    color: "#fff"
+  },
+
+  left: {
+    width: "50%",
+    padding: "20px",
+    overflowY: "auto",
+    borderRight: "1px solid #333"
+  },
+
+  right: {
+    width: "50%",
+    display: "flex",
+    flexDirection: "column",
+    padding: "10px",
+    gap: "10px"
+  },
+
+  diff: {
+    color: "#facc15"
+  },
+
+  desc: {
+    marginTop: "10px",
+    lineHeight: "1.5"
+  },
+
+  input: {
+    padding: "10px",
+    borderRadius: "6px",
+    border: "none",
+    background: "#1e293b",
+    color: "#fff"
+  },
+
+  btnRow: {
+    display: "flex",
+    gap: "10px"
+  },
+
+  runBtn: {
+    flex: 1,
+    padding: "10px",
+    background: "#22c55e",
+    border: "none",
+    borderRadius: "6px",
+    color: "#fff",
+    cursor: "pointer"
+  },
+
+  submitBtn: {
+    flex: 1,
+    padding: "10px",
+    background: "#6366f1",
+    border: "none",
+    borderRadius: "6px",
+    color: "#fff",
+    cursor: "pointer"
+  },
+
+  output: {
+    background: "#020617",
+    padding: "10px",
+    borderRadius: "6px"
+  },
+
+  result: {
+    padding: "10px",
+    background: "#111827",
+    borderRadius: "6px"
+  }
+};
