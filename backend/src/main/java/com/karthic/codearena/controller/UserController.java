@@ -4,6 +4,7 @@ import com.karthic.codearena.dto.*;
 import com.karthic.codearena.service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,8 +18,12 @@ public class UserController {
 
     // ✅ REGISTER
     @PostMapping("/register")
-    public UserResponse registerUser(@RequestBody RegisterRequest request) {
-        return userService.registerUser(request);
+    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest request) {
+        try {
+            return ResponseEntity.ok(userService.registerUser(request));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        }
     }
 
     // ✅ LOGIN
