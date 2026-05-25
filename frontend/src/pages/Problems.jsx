@@ -80,6 +80,21 @@ function Problems() {
           onChange={(e) => setSearch(e.target.value)}
         />
 
+        {/* 🔥 PROFILE BUTTON */}
+        <button
+          style={styles.profileBtn}
+          onClick={() => navigate("/profile")}
+        >
+          Profile
+        </button>
+
+        <button
+          style={styles.profileBtn}
+          onClick={() => navigate("/leaderboard")}
+        >
+          Leaderboard
+        </button>
+
         <button style={styles.logout} onClick={logout}>
           Logout
         </button>
@@ -183,5 +198,14 @@ const styles = {
     padding: "5px 10px",
     borderRadius: "20px",
     fontSize: "12px"
+  },
+
+  profileBtn: {
+    padding: "10px 15px",
+    background: "#3b82f6", // blue
+    border: "none",
+    borderRadius: "6px",
+    color: "#fff",
+    cursor: "pointer"
   }
 };

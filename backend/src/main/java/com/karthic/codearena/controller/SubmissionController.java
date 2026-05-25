@@ -7,7 +7,10 @@ import com.karthic.codearena.service.SubmissionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/submissions")
@@ -92,6 +95,55 @@ public class SubmissionController {
                 .map(SubmissionDTO::getProblemId)
                 .distinct()
                 .toList();
+    }
+
+    @GetMapping("/stats")
+    public Map<String, Object> getUserStats(Authentication authentication) {
+
+        String email = authentication.getName();
+
+        List<SubmissionDTO> submissions =
+                submissionService.getByUserEmail(email);
+
+        // ✅ only accepted
+        List<SubmissionDTO> accepted = submissions.stream()
+                .filter(s -> "ACCEPTED".equalsIgnoreCase(s.getStatus()))
+                .toList();
+
+        // ✅ unique solved problems
+        Map<Long, SubmissionDTO> unique = new HashMap<>();
+
+        for (SubmissionDTO s : accepted) {
+            unique.putIfAbsent(s.getProblemId(), s);
+        }
+
+        long solved = unique.size();
+
+        long easy = unique.values().stream()
+                .filter(s -> "EASY".equalsIgnoreCase(s.getDifficulty()))
+                .count();
+
+        long medium = unique.values().stream()
+                .filter(s -> "MEDIUM".equalsIgnoreCase(s.getDifficulty()))
+                .count();
+
+        long hard = unique.values().stream()
+                .filter(s -> "HARD".equalsIgnoreCase(s.getDifficulty()))
+                .count();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("solved", solved);
+        stats.put("total", 50);
+        stats.put("easy", easy);
+        stats.put("medium", medium);
+        stats.put("hard", hard);
+
+        return stats;
+    }
+
+    @GetMapping("/leaderboard")
+    public List<Map<String, Object>> getLeaderboard() {
+        return submissionService.getLeaderboard();
     }
         
 }

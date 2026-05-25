@@ -208,6 +208,7 @@ public class SubmissionService {
                 sub.getUser().getEmail(),
                 sub.getProblem().getId(),   
                 sub.getProblem().getTitle(),
+                sub.getProblem().getDifficulty(),
                 sub.getStatus(),
                 sub.getFailedTestCase() != null ? sub.getFailedTestCase() : -1,
                 sub.getLanguage()
@@ -225,5 +226,72 @@ public class SubmissionService {
         return submissions.stream()
                 .map(this::convertToDTO)
                 .toList();
+    }
+
+    // ============================================
+    // 🏆 LEADERBOARD (SCORE BASED)
+    // ============================================
+    public List<Map<String, Object>> getLeaderboard() {
+
+        List<Submission> submissions = submissionRepository.findAll();
+
+        // ✅ only accepted
+        List<Submission> accepted = submissions.stream()
+                .filter(s -> "ACCEPTED".equalsIgnoreCase(s.getStatus()))
+                .toList();
+
+        // ✅ group by USER (FIXED)
+        Map<User, Map<Long, Submission>> userMap = new HashMap<>();
+
+        for (Submission s : accepted) {
+            User user = s.getUser();
+
+            userMap.putIfAbsent(user, new HashMap<>());
+            userMap.get(user).putIfAbsent(s.getProblem().getId(), s);
+        }
+
+        // ✅ build leaderboard
+        List<Map<String, Object>> leaderboard = new ArrayList<>();
+
+        for (User user : userMap.keySet()) {
+
+            Collection<Submission> solvedProblems = userMap.get(user).values();
+
+            int easy = 0, medium = 0, hard = 0;
+
+            for (Submission s : solvedProblems) {
+                String diff = s.getProblem().getDifficulty();
+
+                if ("EASY".equalsIgnoreCase(diff)) easy++;
+                else if ("MEDIUM".equalsIgnoreCase(diff)) medium++;
+                else if ("HARD".equalsIgnoreCase(diff)) hard++;
+            }
+
+            int solved = solvedProblems.size();
+
+            // 🔥 SCORE FORMULA
+            int score = easy * 1 + medium * 3 + hard * 5;
+
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("name", user.getName());       // ✅ FIXED
+            entry.put("email", user.getEmail());     // optional
+            entry.put("score", score);
+            entry.put("solved", solved);
+            entry.put("easy", easy);
+            entry.put("medium", medium);
+            entry.put("hard", hard);
+
+            leaderboard.add(entry);
+        }
+
+        // 🔥 SORT
+        leaderboard.sort((a, b) -> {
+            int scoreCompare = ((Integer) b.get("score")).compareTo((Integer) a.get("score"));
+            if (scoreCompare != 0) return scoreCompare;
+
+            return ((Integer) b.get("solved")).compareTo((Integer) a.get("solved"));
+        });
+
+        return leaderboard;
     }
 }
