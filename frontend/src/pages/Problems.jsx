@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../services/api";
 
 function Problems() {
   const [problems, setProblems] = useState([]);
@@ -25,7 +26,7 @@ function Problems() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("http://localhost:8080/api/problems", {
+      const res = await apiFetch("/api/problems", {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -42,7 +43,7 @@ function Problems() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:8080/api/submissions/solved", {
+      const res = await apiFetch("/api/submissions/solved", {
         headers: { Authorization: `Bearer ${token}` }
       });
 

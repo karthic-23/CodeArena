@@ -1,14 +1,19 @@
-# Backend
-backend/target/
-backend/*.class
-
 # Frontend
-codearena-frontend/codearena-frontend/node_modules/
-codearena-frontend/codearena-frontend/dist/
+frontend/node_modules
+frontend/dist
 
-# OS files
-.DS_Store
-Thumbs.db
+# Backend
+backend/target
 
-# Env
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+
+# Database backups
+*.sql
+
+# Environment files
 .env

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "../services/api";
 
 function Leaderboard() {
   const [data, setData] = useState([]);
@@ -10,7 +11,7 @@ function Leaderboard() {
   const fetchLeaderboard = async () => {
     const token = localStorage.getItem("token");
 
-    const res = await fetch("http://localhost:8080/api/submissions/leaderboard", {
+    const res = await apiFetch("/api/submissions/leaderboard", {
       headers: { Authorization: `Bearer ${token}` }
     });
 

@@ -16,7 +16,12 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         // 🔥 Allow frontend
-        config.addAllowedOrigin("http://localhost:5173");
+        config.setAllowedOrigins(
+            java.util.List.of(
+                "http://localhost:5173",
+                "http://localhost:3000"
+            )
+        );
 
         // 🔥 Allow all HTTP methods
         config.addAllowedMethod("*");

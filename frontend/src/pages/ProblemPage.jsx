@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
+import { apiFetch } from "../services/api";
 
 function ProblemPage() {
   const { id } = useParams();
@@ -47,7 +48,7 @@ function ProblemPage() {
   const fetchProblem = async () => {
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`http://localhost:8080/api/problems/${id}`, {
+    const res = await apiFetch(`/api/problems/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -60,8 +61,8 @@ function ProblemPage() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch(
-        `http://localhost:8080/api/submissions/status/${id}`,
+      const res = await apiFetch(
+        `/api/submissions/status/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -98,8 +99,8 @@ function ProblemPage() {
       let outputs = [];
 
       for (let input of inputs) {
-        const res = await fetch(
-          `http://localhost:8080/api/run?language=JAVA&input=${encodeURIComponent(input)}`,
+        const res = await apiFetch(
+          `/api/run?language=JAVA&input=${encodeURIComponent(input)}`,
           {
             method: "POST",
             headers: {
@@ -132,8 +133,8 @@ function ProblemPage() {
     setSubmissionResult(null);
 
     try {
-      const res = await fetch(
-        `http://localhost:8080/api/submissions?problemId=${id}&language=JAVA`,
+      const res = await apiFetch(
+        `/api/submissions?problemId=${id}&language=JAVA`,
         {
           method: "POST",
           headers: {
