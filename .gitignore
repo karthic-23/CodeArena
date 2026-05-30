@@ -12,8 +12,5 @@ backend/target
 # Logs
 *.log
 
-# Database backups
-*.sql
-
 # Environment files
 .env

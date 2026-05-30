@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
 
     environment:
-      MYSQL_ROOT_PASSWORD: K@rthic23
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: codearena
 
     ports:
@@ -14,6 +14,7 @@ services:
 
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./database/codearena_full.sql:/docker-entrypoint-initdb.d/codearena_full.sql
 
   backend:
     build:
