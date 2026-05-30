@@ -32,7 +32,7 @@ services:
     environment:
       DB_URL: jdbc:mysql://mysql:3306/codearena
       DB_USERNAME: root
-      DB_PASSWORD: K@rthic23
+      DB_PASSWORD: ${DB_PASSWORD}
 
   frontend:
     build:
