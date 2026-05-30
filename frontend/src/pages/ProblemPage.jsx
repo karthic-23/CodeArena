@@ -9,9 +9,12 @@ function ProblemPage() {
   const [problem, setProblem] = useState(null);
 
   // ✅ SAFE INITIAL CODE (NO CRASH)
-  const [code, setCode] = useState(`class Main {
+  const [code, setCode] = useState(`import java.util.*;
+public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello World");
+        Scanner sc = new Scanner(System.in);
+
+        sc.close();
     }
 }`);
 
@@ -24,26 +27,28 @@ function ProblemPage() {
   const [runLoading, setRunLoading] = useState(false);
 
   const [submissionResult, setSubmissionResult] = useState(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
   useEffect(() => {
     fetchProblem();
     fetchStatus();
-  }, []);
+  }, [id]);
 
   // ✅ LOAD SAVED CODE (AFTER ID EXISTS)
   useEffect(() => {
-    if (id) {
-      const saved = localStorage.getItem(`code-${id}`);
-      if (saved) setCode(saved);
-    }
+    if (!id) return;
+    loadDraft();
   }, [id]);
 
-  // ✅ SAVE CODE
+  // ✅ AUTOSAVE CODE
   useEffect(() => {
-    if (id) {
-      localStorage.setItem(`code-${id}`, code);
-    }
-  }, [code, id]);
+    if (!draftLoaded) return;
+    if (!id) return;
+    const timer = setTimeout(() => {
+      saveDraft();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [code, draftLoaded, id]);
 
   const fetchProblem = async () => {
     const token = localStorage.getItem("token");
@@ -74,6 +79,70 @@ function ProblemPage() {
     } catch (err) {
       console.error("Status API failed");
       setStatus("UNSOLVED");
+    }
+  };
+
+  const loadDraft = async () => {
+
+    try {
+
+      const token = localStorage.getItem("token");
+
+      const res = await apiFetch(
+        `/api/drafts/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      if (res.ok) {
+
+        const text = await res.text();
+
+        if (!text) {
+          setDraftLoaded(true);
+          return;
+        }
+
+        const data = JSON.parse(text);
+
+        if (data?.code) {
+          setCode(data.code);
+        }
+      }
+
+    } 
+    catch (err) {
+      console.error("Draft load failed", err);
+    }
+
+    setDraftLoaded(true);
+  };
+  
+  const saveDraft = async () => {
+    if (!code.trim()) return;
+    try {
+      const token = localStorage.getItem("token");
+      await apiFetch(
+        "/api/drafts",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            problemId: Number(id),
+            code,
+            language: "JAVA"
+          })
+        }
+      );
+
+    } catch (err) {
+      console.error("Draft save failed", err);
     }
   };
 

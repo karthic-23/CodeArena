@@ -12,14 +12,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-// 🔥 Spring Security Imports
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 
-// 🔥 Your Service
 import com.karthic.codearena.service.UserService;
+import io.jsonwebtoken.ExpiredJwtException;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -39,8 +38,23 @@ public class JwtFilter extends OncePerRequestFilter {
         String email = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
+
             token = authHeader.substring(7);
-            email = JwtUtil.extractEmail(token);
+
+            try {
+                email = JwtUtil.extractEmail(token);
+
+            } catch (Exception e) {
+
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+
+                response.getWriter().write(
+                    "{\"message\":\"Invalid or expired token\"}"
+                );
+
+                return;
+            }
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
